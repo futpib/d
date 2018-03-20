@@ -16,7 +16,7 @@ But it is similar to other familliar concepts:
 ## Usage
 
 ```js
-const d = require('futpib/d');
+const d = require('@futpib/d');
 
 function log(s) {
     const { output } = d.scope;
@@ -33,7 +33,9 @@ d.const({ output: process.stderr }, () => {
     // Writes "world" to standard error
 });
 
-const logToFile = s.bind({ output: fs.createWriteStream('log.txt') }, log);
+const fs = require('fs');
+
+const logToFile = d.bind({ output: fs.createWriteStream('log.txt') }, log);
 
 logToFile('fluff');
 // Writes "fluff" to 'log.txt' in current directory
