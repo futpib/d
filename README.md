@@ -50,3 +50,7 @@ or
 ```
 npm install @futpib/d
 ```
+
+## Inspirations
+
+* Common Lisp's [defparameter and defvar](http://clhs.lisp.se/Body/m_defpar.htm)
