@@ -51,6 +51,36 @@ or
 npm install @futpib/d
 ```
 
+## Performance
+
+Keeping `d.const` and `d.bind`-created function calls outside tight loops seems like a good idea.
+
+Suprisingly, it outperforms `this` in this [basic benchmark](https://github.com/futpib/d/blob/master/index.benchmark.js) while the expressivity gain is huge.
+
+```js
+// d-style
+const sma3 = i => (value(i - 1) + value(i)) / 3;
+
+// this-style
+function sma3(i) {
+  return (value.call(this, i - 1) + value.call(this, i)) / 3;
+}
+```
+
+| Test | Speed |
+|-|-|
+| inner d.bind     | 20,257,621 ops/sec ±0.85%     |
+| outer d.const     | 511,502,729 ops/sec ±0.63%      |
+| this | 484,485,335 ops/sec ±0.47% |
+| factories | 3,611,223 ops/sec ±0.22% |
+| no abstraction | 524,651,480 ops/sec ±0.41% |
+
+
+Check out [index.benchmark.js](https://github.com/futpib/d/blob/master/index.benchmark.js).
+
+Run via `yarn benchmark`.
+
+
 ## Inspirations
 
 * Common Lisp's [defparameter and defvar](http://clhs.lisp.se/Body/m_defpar.htm)
