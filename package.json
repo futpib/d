@@ -1,5 +1,5 @@
 {
-  "name": "d",
+  "name": "@futpib/d",
   "version": "0.0.0",
   "description": "Dynamic scope (emulation)",
   "main": "index.js",
