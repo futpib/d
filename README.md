@@ -57,7 +57,7 @@ npm install @futpib/d
 
 Keeping `d.const` and `d.bind`-created function calls outside tight loops seems like a good idea.
 
-Suprisingly, it outperforms `this` in this [basic benchmark](https://github.com/futpib/d/blob/master/index.benchmark.js) while the expressivity gain is huge.
+Suprisingly, most optimal usage scenario outperforms `this` in this [basic benchmark](https://github.com/futpib/d/blob/master/index.benchmark.js) while the expressivity gain is huge.
 
 ```js
 // d-style
