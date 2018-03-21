@@ -4,16 +4,9 @@ const Benchmark = require('benchmark');
 const d = require('.');
 
 const series = [ 0, 1, 2, 3 ];
+const series_ = [ 1, 2, 3, 4 ];
 
-const withInnerDBind = (() => {
-	const value = i => d.scope.series[i];
-	const sma3 = i => (value(i - 2) + value(i - 1) + value(i)) / 3;
-	const absdiff = f => g => i => Math.abs(f(i) - g(i));
-	const f = absdiff(sma3)(value);
-	return d.bind({ series }, f);
-})();
-
-const withOuterDConst = (() => {
+const withD = (() => {
 	const value = i => d.scope.series[i];
 	const sma3 = i => (value(i - 2) + value(i - 1) + value(i)) / 3;
 	const absdiff = f => g => i => Math.abs(f(i) - g(i));
@@ -32,7 +25,7 @@ const withThis = (() => {
 		return Math.abs(f.call(this, i) - g.call(this, i));
 	};
 	const f = absdiff(sma3)(value);
-	return f.bind({ series });
+	return f;
 })();
 
 const withFactories = (() => {
@@ -47,32 +40,27 @@ const withFactories = (() => {
 		return i => Math.abs(f(i) - g(i));
 	};
 	const createF = scope => createAbsDiff(scope)(createSma3)(createAbsDiff);
-	return createF({ series });
+	return createF;
 })();
 
-const withNoAbstraction = (() => {
-	const value = i => series[i];
-	const sma3 = i => (value(i - 2) + value(i - 1) + value(i)) / 3;
-	const absdiff = f => g => i => Math.abs(f(i) - g(i));
-	const f = absdiff(sma3)(value);
-	return f;
+const withLexical = (() => {
+	return ({ series }) => {
+		const value = i => series[i];
+		const sma3 = i => (value(i - 2) + value(i - 1) + value(i)) / 3;
+		const absdiff = f => g => i => Math.abs(f(i) - g(i));
+		const f = absdiff(sma3)(value);
+		return f;
+	};
 })();
 
-const buildBench = withWhat => () => {
-	withWhat(series.length - 1);
-};
-
-d.const({ series }, () => {
-	(new Benchmark.Suite('🤔', {
+const benchmark = (n, f) => {
+	console.log();
+	console.log(n);
+	return f(new Benchmark.Suite(n, {
 		onError(err) {
 			console.error(err);
 		},
 	}))
-		.add('inner d.bind', buildBench(withInnerDBind))
-		.add('outer d.const', buildBench(withOuterDConst))
-		.add('this', buildBench(withThis))
-		.add('factories', buildBench(withFactories))
-		.add('no abstraction', buildBench(withNoAbstraction))
 		.on('cycle', event => {
 			console.log(String(event.target));
 		})
@@ -80,4 +68,54 @@ d.const({ series }, () => {
 			console.log('Fastest is ' + this.filter('fastest').map('name'));
 		})
 		.run();
+};
+
+d.const({ series }, () => {
+	const withThisBound = withThis.bind({ series });
+	const withFactoriesBound = withFactories({ series });
+	const withLexicalBound = withLexical({ series });
+
+	benchmark('Without changing context', b => {
+		return b
+			.add('d', () => {
+				withD(series.length - 1);
+			})
+			.add('this', () => {
+				withThisBound(series.length - 1);
+			})
+			.add('factories', () => {
+				withFactoriesBound(series.length - 1);
+			})
+			.add('lexical', () => {
+				withLexicalBound(series.length - 1);
+			});
+	});
+});
+
+benchmark('With changing context', b => {
+	return b
+		.add('d+const', () => {
+			d.const({ series }, () => withD(series.length - 1));
+			d.const({ series: series_ }, () => withD(series_.length - 1));
+		})
+		.add('d+bind', () => {
+			d.bind({ series }, withD)(series.length - 1);
+			d.bind({ series: series_ }, withD)(series_.length - 1);
+		})
+		.add('this+call', () => {
+			withThis.call({ series }, series.length - 1);
+			withThis.call({ series: series_ }, series_.length - 1);
+		})
+		.add('this+bind', () => {
+			withThis.bind({ series })(series.length - 1);
+			withThis.bind({ series: series_ })(series_.length - 1);
+		})
+		.add('factories', () => {
+			withFactories({ series })(series.length - 1);
+			withFactories({ series: series_ })(series_.length - 1);
+		})
+		.add('lexical', () => {
+			withLexical({ series })(series.length - 1);
+			withLexical({ series: series_ })(series_.length - 1);
+		});
 });

@@ -42,3 +42,10 @@ const testMacro = (t, id) => {
 
 test('with string', testMacro, 'str');
 test('with symbol', testMacro, Symbol('sym'));
+
+test('Bound function name and length', t => {
+	const f = (a, b, c) => a + b + c;
+	const g = d.bind({}, f);
+	t.is(g.name, 'd.bound f');
+	t.is(g.length, 3);
+});
