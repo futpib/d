@@ -1,7 +1,6 @@
 
 const Benchmark = require('benchmark');
-
-const d = require('.');
+const d = require('./index.js');
 
 const series = [ 0, 1, 2, 3 ];
 const series_ = [ 1, 2, 3, 4 ];
@@ -18,12 +17,15 @@ const withThis = (() => {
 	function value(i) {
 		return this.series[i];
 	}
+
 	function sma3(i) {
 		return (value.call(this, i - 2) + value.call(this, i - 1) + value.call(this, i)) / 3;
 	}
+
 	const absdiff = f => g => function (i) {
 		return Math.abs(f.call(this, i) - g.call(this, i));
 	};
+
 	const f = absdiff(sma3)(value);
 	return f;
 })();
@@ -34,31 +36,31 @@ const withFactories = (() => {
 		const value = createValue(scope);
 		return i => (value(i - 2) + value(i - 1) + value(i)) / 3;
 	};
+
 	const createAbsDiff = scope => createF => createG => {
 		const f = createF(scope);
 		const g = createG(scope);
 		return i => Math.abs(f(i) - g(i));
 	};
+
 	const createF = scope => createAbsDiff(scope)(createSma3)(createAbsDiff);
 	return createF;
 })();
 
-const withLexical = (() => {
-	return ({ series }) => {
-		const value = i => series[i];
-		const sma3 = i => (value(i - 2) + value(i - 1) + value(i)) / 3;
-		const absdiff = f => g => i => Math.abs(f(i) - g(i));
-		const f = absdiff(sma3)(value);
-		return f;
-	};
+const withLexical = (() => ({ series }) => {
+	const value = i => series[i];
+	const sma3 = i => (value(i - 2) + value(i - 1) + value(i)) / 3;
+	const absdiff = f => g => i => Math.abs(f(i) - g(i));
+	const f = absdiff(sma3)(value);
+	return f;
 })();
 
 const benchmark = (n, f) => {
 	console.log();
 	console.log(n);
 	return f(new Benchmark.Suite(n, {
-		onError(err) {
-			console.error(err);
+		onError(error) {
+			console.error(error);
 		},
 	}))
 		.on('cycle', event => {
@@ -75,50 +77,46 @@ d.const({ series }, () => {
 	const withFactoriesBound = withFactories({ series });
 	const withLexicalBound = withLexical({ series });
 
-	benchmark('Without changing context', b => {
-		return b
-			.add('d', () => {
-				withD(series.length - 1);
-			})
-			.add('this', () => {
-				withThisBound(series.length - 1);
-			})
-			.add('factories', () => {
-				withFactoriesBound(series.length - 1);
-			})
-			.add('lexical', () => {
-				withLexicalBound(series.length - 1);
-			});
-	});
-});
-
-benchmark('With changing context', b => {
-	return b
-		.add('d+const', () => {
-			d.const({ series }, () => withD(series.length - 1));
-			d.const({ series: series_ }, () => withD(series_.length - 1));
+	benchmark('Without changing context', b => b
+		.add('d', () => {
+			withD(series.length - 1);
 		})
-		.add('d+bind', () => {
-			d.bind({ series }, withD)(series.length - 1);
-			d.bind({ series: series_ }, withD)(series_.length - 1);
-		})
-		.add('this+call', () => {
-			withThis.call({ series }, series.length - 1);
-			withThis.call({ series: series_ }, series_.length - 1);
-		})
-		.add('this+bind', () => {
-			withThis.bind({ series })(series.length - 1);
-			withThis.bind({ series: series_ })(series_.length - 1);
+		.add('this', () => {
+			withThisBound(series.length - 1);
 		})
 		.add('factories', () => {
-			withFactories({ series })(series.length - 1);
-			withFactories({ series: series_ })(series_.length - 1);
+			withFactoriesBound(series.length - 1);
 		})
 		.add('lexical', () => {
-			withLexical({ series })(series.length - 1);
-			withLexical({ series: series_ })(series_.length - 1);
-		});
+			withLexicalBound(series.length - 1);
+		}));
 });
+
+benchmark('With changing context', b => b
+	.add('d+const', () => {
+		d.const({ series }, () => withD(series.length - 1));
+		d.const({ series: series_ }, () => withD(series_.length - 1));
+	})
+	.add('d+bind', () => {
+		d.bind({ series }, withD)(series.length - 1);
+		d.bind({ series: series_ }, withD)(series_.length - 1);
+	})
+	.add('this+call', () => {
+		withThis.call({ series }, series.length - 1);
+		withThis.call({ series: series_ }, series_.length - 1);
+	})
+	.add('this+bind', () => {
+		withThis.bind({ series })(series.length - 1);
+		withThis.bind({ series: series_ })(series_.length - 1);
+	})
+	.add('factories', () => {
+		withFactories({ series })(series.length - 1);
+		withFactories({ series: series_ })(series_.length - 1);
+	})
+	.add('lexical', () => {
+		withLexical({ series })(series.length - 1);
+		withLexical({ series: series_ })(series_.length - 1);
+	}));
 
 benchmark('With changing context 2', b => {
 	const dConstA = n => d.const({ series }, () => withD(n));

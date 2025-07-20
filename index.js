@@ -15,6 +15,7 @@ function create(proto, props) {
 			}
 		}
 	}
+
 	return o;
 }
 
@@ -28,6 +29,7 @@ class DynamicEnvironment {
 		if (this._lastOwnVars === ownVars && this._lastParent === parent && this._lastInstance) {
 			return this._lastInstance;
 		}
+
 		this._lastOwnVars = ownVars;
 		this._lastParent = parent;
 		this._lastInstance = new this(ownVars, parent);
@@ -54,10 +56,8 @@ class D {
 	}
 
 	bind(vars, f) {
-		const d = this;
-		const g = function () {
-			return d.const(vars, () => f.apply(this, arguments));
-		};
+		const g = (...args) => this.const(vars, () => Reflect.apply(f, this, args));
+
 		defineProperty(g, 'name', 'd.bound ' + f.name);
 		defineProperty(g, 'length', f.length);
 		return g;

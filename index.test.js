@@ -1,7 +1,6 @@
 
 import test from 'ava';
-
-import d from '.';
+import d from './index.js';
 
 const testMacro = (t, id) => {
 	t.truthy(id);
@@ -35,7 +34,7 @@ const testMacro = (t, id) => {
 	// Error
 	t.throws(() => d.const({ [id]: 2 }, () => {
 		throw new Error('test');
-	}), 'test');
+	}), { message: 'test' });
 
 	t.is(d.scope[id], undefined);
 };
